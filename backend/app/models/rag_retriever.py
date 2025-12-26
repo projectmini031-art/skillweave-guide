@@ -1,17 +1,16 @@
-import faiss
-import numpy as np
+import faiss, numpy as np
 from sentence_transformers import SentenceTransformer
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
 index = faiss.IndexFlatL2(384)
 documents = []
 
-def add_documents(docs: list):
+def add_documents(docs):
     vectors = model.encode(docs)
     index.add(np.array(vectors))
     documents.extend(docs)
 
-def retrieve_context(query: str, k: int = 2):
-    q_vec = model.encode([query])
-    _, indices = index.search(q_vec, k)
-    return [documents[i] for i in indices[0]]
+def retrieve_context(query, k=2):
+    vec = model.encode([query])
+    _, idx = index.search(vec, k)
+    return [documents[i] for i in idx[0]]

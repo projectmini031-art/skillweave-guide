@@ -1,10 +1,10 @@
 from fastapi import APIRouter, UploadFile
 from app.models.skill_extractor import extract_skills
-from app.utils.data_loader import load_skills
+from app.utils.data_loader import load_esco_skills
 
 router = APIRouter(prefix="/resume", tags=["Resume"])
 
-ESCO_SKILLS = load_skills()
+ESCO_SKILLS = load_esco_skills()
 
 @router.post("/upload")
 async def upload_resume(file: UploadFile):

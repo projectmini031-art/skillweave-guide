@@ -1,19 +1,14 @@
 from fastapi import APIRouter
-from app.models.rag_retriever import retrieve_context, add_documents
+from app.models.rag_retriever import add_documents, retrieve_context
 
 router = APIRouter(prefix="/rag", tags=["RAG"])
 
-# Load sample knowledge base
 add_documents([
-    "Data Analysts need strong SQL and statistics skills.",
-    "Machine Learning Engineers require Python and ML fundamentals.",
-    "Learning Python improves career opportunities."
+    "Data Analysts require SQL, Python, and statistics.",
+    "Machine Learning Engineers need Python and ML fundamentals.",
+    "ESCO and O*NET provide standardized skill taxonomies."
 ])
 
 @router.post("/chat")
 def chat(query: str):
-    context = retrieve_context(query)
-    return {
-        "query": query,
-        "retrieved_context": context
-    }
+    return {"response": retrieve_context(query)}

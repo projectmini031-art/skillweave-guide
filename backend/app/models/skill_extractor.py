@@ -1,13 +1,11 @@
 import spacy
 
-nlp = spacy.load("en_core_web_sm")
+nlp = spacy.load("en_core_web_trf")
 
-def extract_skills(text: str, skill_list: list) -> list:
-    text = text.lower()
-    extracted = set()
-
-    for skill in skill_list:
-        if skill in text:
-            extracted.add(skill)
-
-    return list(extracted)
+def extract_skills(text):
+    doc = nlp(text)
+    skills = set()
+    for ent in doc.ents:
+        if ent.label_ in ["ORG", "PRODUCT", "SKILL"]:
+            skills.add(ent.text)
+    return list(skills)

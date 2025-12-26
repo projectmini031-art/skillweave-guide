@@ -1,9 +1,9 @@
 from rapidfuzz import process
 
-def normalize_skills(user_skills: list, standard_skills: list) -> list:
-    normalized = set()
-    for skill in user_skills:
+def normalize_skills(skills, standard_skills):
+    normalized = []
+    for skill in skills:
         match, score, _ = process.extractOne(skill, standard_skills)
-        if score >= 80:
-            normalized.add(match)
-    return list(normalized)
+        if score > 80:
+            normalized.append(match)
+    return list(set(normalized))

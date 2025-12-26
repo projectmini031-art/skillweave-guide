@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pandas
+spacy
+sentence-transformers
+faiss-cpu
+scikit-learn
+rapidfuzz
+sqlalchemy
