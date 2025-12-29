@@ -7,3 +7,6 @@ faiss-cpu
 scikit-learn
 rapidfuzz
 sqlalchemy
+pymongo
+python-dotenv
+passlib[bcrypt]

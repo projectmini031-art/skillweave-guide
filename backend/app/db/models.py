@@ -1,16 +1,18 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, DateTime
+from sqlalchemy.sql import func
 from app.db.database import Base
 
 class User(Base):
     __tablename__ = "users"
-    user_id = Column(Integer, primary_key=True)
-    name = Column(String(100))
-    email = Column(String(150))
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, nullable=False)
+    password = Column(String, nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
 
-class UserSkill(Base):
-    __tablename__ = "user_skills"
-    skill_id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.user_id"))
-    raw_skill = Column(String(150))
-    standard_skill_code = Column(String(50))
-    confidence_score = Column(Float)
+class SkillAnalysis(Base):
+    __tablename__ = "skill_analysis"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer)
+    job_role = Column(String)
+    match_percentage = Column(Float)
+    created_at = Column(DateTime, server_default=func.now())
