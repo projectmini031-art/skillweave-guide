@@ -1,4 +1,4 @@
-🚀 Skill Gap Analysis & Career Recommendation System(Under completion)
+🚀 Skill Gap Analysis & Career Recommendation System(Still working on it)
 
 (Full-Stack + Machine Learning + NLP Project)
 
