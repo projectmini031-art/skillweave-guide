@@ -3,7 +3,7 @@ import json
 import re
 from dotenv import load_dotenv
 from google import genai
-
+import time
 load_dotenv()
 
 API_KEY = os.getenv("GOOGLE_API_KEY")
@@ -29,19 +29,52 @@ def _clean_json(text: str) -> str:
     return text.strip()
 
 
-def gemini_generate_json(prompt: str):
-    response = client.models.generate_content(
-        model=MODEL_NAME,
-        contents=prompt,
-    )
 
-    raw = response.text
-    cleaned = _clean_json(raw)
+
+def gemini_generate_json(prompt: str):
+    """Generate JSON using Gemini without crashing on API failures."""
 
     try:
-        return json.loads(cleaned)
-    except json.JSONDecodeError:
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=prompt,
+        )
+
+        raw = response.text
+
+        if not raw or not raw.strip():
+            return {
+                "error": "Gemini returned an empty response."
+            }
+
+        cleaned = _clean_json(raw)
+
+        try:
+            result = json.loads(cleaned)
+
+            if not isinstance(result, dict):
+                return {
+                    "error": "Gemini returned JSON in an unexpected format."
+                }
+
+            return result
+
+        except json.JSONDecodeError:
+            return {
+                "error": "Gemini returned invalid JSON."
+            }
+
+    except Exception as exc:
+        error_message = str(exc).lower()
+
+        if "429" in error_message or "resource_exhausted" in error_message:
+            print("Gemini daily quota exhausted. Using fallback learning path.")
+            return {
+                "error": "Gemini API quota exhausted."
+            }
+
+        print(f"Gemini API request failed: {exc}")
+
         return {
-            "error": "Invalid JSON returned by Gemini",
-            "raw": raw,
+            "error": "Gemini is temporarily unavailable."
         }

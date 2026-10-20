@@ -1,0 +1,28 @@
+﻿# Environment secrets
+.env
+.env.*
+!.env.example
+backend/.env
+frontend-new/.env
+frontend-new/.env.*
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+backend/venv/
+
+# Frontend dependencies and builds
+node_modules/
+dist/
+frontend-new/node_modules/
+frontend-new/dist/
+
+# Local tools and temporary files
+.vscode/
+.idea/
+*.log
+.DS_Store
+Thumbs.db
