@@ -77,19 +77,60 @@ const JobRecommendations = () => {
     try {
       setIsLoading(true);
       setError(null);
-      
-      if (currentSkills.length === 0) {
+
+      if (!currentSkills || currentSkills.length === 0) {
+        setJobs([]);
         setError("Please upload your resume first to get job recommendations.");
-        setIsLoading(false);
         return;
       }
 
-      const response = await aiEngineAPI.getRoleConstrainedRecommendations(
-        roleFilter ? { role: roleFilter } : {}
-      );
-      setJobs(response.data?.recommended_jobs || response.data?.jobs || []);
+      try {
+        const response = await aiEngineAPI.getRoleConstrainedRecommendations(
+          roleFilter ? { role: roleFilter } : {}
+        );
+
+        setJobs(
+          response.data?.recommended_jobs || response.data?.jobs || []
+        );
+      } catch (roleConstrainedErr) {
+        // Fall back to the standard endpoint if the role-constrained
+        // recommendations endpoint is unavailable.
+        const skillUris = currentSkills
+          .map((skill) =>
+            typeof skill === "string" ? null : skill?.uri || null
+          )
+          .filter(Boolean);
+
+        const fallbackSkillNames = currentSkills.map((skill) =>
+          typeof skill === "string"
+            ? skill
+            : skill?.skill || skill?.name || skill
+        );
+
+        const payloadSkills =
+          skillUris.length > 0 ? skillUris : fallbackSkillNames;
+
+        try {
+          const fallbackResponse = await aiEngineAPI.getJobRecommendations({
+            skills: payloadSkills,
+          });
+
+          setJobs(
+            fallbackResponse.data?.jobs || fallbackResponse.data || []
+          );
+        } catch (fallbackErr) {
+          console.error(
+            "Failed to fetch job recommendations:",
+            roleConstrainedErr,
+            fallbackErr
+          );
+          setJobs([]);
+          setError(normalizeErrorMessage(fallbackErr));
+        }
+      }
     } catch (err) {
       console.error("Failed to fetch jobs:", err);
+      setJobs([]);
       setError(normalizeErrorMessage(err));
     } finally {
       setIsLoading(false);
@@ -155,7 +196,6 @@ const JobRecommendations = () => {
             </select>
           </div>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className="rounded-xl border p-4 text-center animate-fade-in" style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', borderColor: 'rgba(255, 255, 255, 0.3)' }}>
             <p className="text-2xl font-bold text-slate-900">{jobs.length}</p>

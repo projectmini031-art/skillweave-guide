@@ -1,16 +1,21 @@
-from fastapi import APIRouter, Body, Depends, Query
+
 from typing import Any
-from app.models.job_recommender import JobRecommender
-from app.services.market_job_service import MarketJobService
-from app.schemas import JobRecommendationResponse, JobRecommendationListResponse
-from app.utils.job_links import generate_job_links
+
+from fastapi import APIRouter, Body, Depends, Query
+
 from app.core.deps import get_current_user
+from app.models.job_recommender import JobRecommender
+from app.schemas import JobRecommendationListResponse
 from app.services.job_recommendation_presenter import (
+    display_match_score,
     role_meta,
     skill_name,
-    display_match_score,
 )
-from app.services.target_role_job_recommendation_service import TargetRoleJobRecommendationService
+from app.services.market_job_service import MarketJobService
+from app.services.target_role_job_recommendation_service import (
+    TargetRoleJobRecommendationService,
+)
+from app.utils.job_links import generate_job_links
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
@@ -22,8 +27,8 @@ target_role_service = TargetRoleJobRecommendationService()
 @router.post("/recommend", response_model=JobRecommendationListResponse)
 def recommend(payload: Any = Body(...)):
     """
-    Accept either a raw list body (e.g. ["s1","s2"]) or
-    an object { skills: [...] }.
+    Accept either a raw list body (e.g. ["s1", "s2"]) or
+    an object containing {"skills": [...]}.
     """
     if isinstance(payload, dict):
         skills = payload.get("skills") or payload.get("user_skills")
@@ -35,8 +40,12 @@ def recommend(payload: Any = Body(...)):
 
     for item in raw_results:
         role_info = role_meta(item["occupation_uri"])
-        matched_skills = [skill_name(s) for s in item.get("matched_skills", [])]
-        missing_skills = [skill_name(s) for s in item.get("missing_skills", [])]
+        matched_skills = [
+            skill_name(skill) for skill in item.get("matched_skills", [])
+        ]
+        missing_skills = [
+            skill_name(skill) for skill in item.get("missing_skills", [])
+        ]
         score = display_match_score(matched_skills, missing_skills)
 
         recommendations.append(
@@ -50,10 +59,11 @@ def recommend(payload: Any = Body(...)):
             }
         )
 
-    HIGH_MATCH_THRESHOLD = 60
+    high_match_threshold = 60
     high_match_roles = [
-        role for role in recommendations
-        if role["match_score"] >= HIGH_MATCH_THRESHOLD
+        role
+        for role in recommendations
+        if role["match_score"] >= high_match_threshold
     ]
 
     if len(high_match_roles) >= 3:
@@ -61,7 +71,10 @@ def recommend(payload: Any = Body(...)):
 
     return {
         "jobs": recommendations[:3],
-        "message": "No highly aligned roles found. Consider improving missing skills.",
+        "message": (
+            "No highly aligned roles found. "
+            "Consider improving missing skills."
+        ),
     }
 
 
@@ -71,18 +84,23 @@ def get_role_constrained_recommendations(
     current_user: dict = Depends(get_current_user),
 ):
     """
-    Role-constrained recommendations aligned to predefined Skill Gap roles.
-    Uses stored user skills and returns top jobs within allowed role categories only.
+    Return role-constrained recommendations based on stored user skills.
     """
     email = current_user.get("email")
-    result = target_role_service.recommend(email=email, selected_role=role)
+    result = target_role_service.recommend(
+        email=email,
+        selected_role=role,
+    )
 
     # Attach external links while preserving the constrained response format.
     enriched = []
+
     for item in result.get("recommended_jobs", []):
         row = {
             **item,
-            "job_links": generate_job_links(item.get("title") or item.get("role_category") or "Job"),
+            "job_links": generate_job_links(
+                item.get("title") or item.get("role_category") or "Job"
+            ),
         }
         enriched.append(row)
 
@@ -99,7 +117,7 @@ def market_trends(
     refresh: bool = Query(False, description="Force refresh instead of cache"),
 ):
     """
-    Fetch live job postings and return top in-demand skills for a role/location.
+    Fetch live job postings and return in-demand skills for a role/location.
     Falls back gracefully when API credentials are missing.
     """
     return market_job_service.get_market_trends(
@@ -114,7 +132,5 @@ def market_trends(
 def trending_roles(
     location: str = Query("United States"),
 ):
-    """
-    Return role-level market activity based on live postings.
-    """
+    """Return role-level market activity based on live postings."""
     return market_job_service.get_trending_roles(location=location)
